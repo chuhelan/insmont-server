@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (C) 2023 The Insmont Open Source Project
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.insmont.dao.user.UserDao">
+
+    <insert id="insertUserWithPhone">
+        insert into user (id, username, mobile_code, mobile, password, registration_date,
+                          registration_ipv4, registration_ipv6, registration_region)
+        values (#{id}, #{username}, #{mobile_code}, #{mobile}, #{password}, now(),
+                #{registration_ipv4}, #{registration_ipv6}, #{registration_region})
+    </insert>
+    <insert id="insertUserWithEmail">
+        insert into user(id, username, email, password, registration_date,
+                         registration_ipv4, registration_ipv6, registration_region)
+        values (#{id}, #{username}, #{email}, #{password}, now(), #{registration_ipv4}, #{registration_ipv6},
+                #{registration_region})
+    </insert>
+
+    <select id="selectUserByPhone" resultType="org.insmont.beans.user.User">
+        select id,
+               username,
+               email,
+               mobile_code,
+               mobile,
+               password,
+               session,
+               expired,
+               registration_date,
+               registration_ipv4,
+               registration_ipv6,
+               registration_region
+        from user
+        where mobile = #{phone}
+    </select>
+    <select id="selectUserByEmail" resultType="org.insmont.beans.user.User">
+        select id,
+               username,
+               email,
+               mobile_code,
+               mobile,
+               password,
+               session,
+               expired,
+               registration_date,
+               registration_ipv4,
+               registration_ipv6,
+               registration_region
+        from user
+        where email = #{email}
+    </select>
+</mapper>

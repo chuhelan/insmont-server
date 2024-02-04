@@ -1,5 +1,7 @@
 # Insmont - 创意和协作的社交媒体平台
 
+**[English Version](README_EN.md)**
+
 <p align="center">
     <a href="https://insmont.org.cn" target="_blank" rel="noopener noreferrer">
         <img width="100" src="https://insmont.org.cn/insmont_version_1.svg" alt="Insmont logo" />
