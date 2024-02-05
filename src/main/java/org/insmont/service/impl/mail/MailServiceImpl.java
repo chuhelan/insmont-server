@@ -89,11 +89,11 @@ public class MailServiceImpl implements MailService {
             return 401;
         }
     }
+    
+    /**
+     *      200 验证成功  400 email或code为空 401 email格式不正确 403 code已过期 404 code不匹配
+     */
 
-
-    /*
-     *       200 验证成功  400 email或code为空 401 email格式不正确 403 code已过期 404 code不匹配
-     * */
     @Override
     public int verify(String email, String code) {
 
