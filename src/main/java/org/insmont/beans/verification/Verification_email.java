@@ -32,6 +32,6 @@ import java.util.Date;
 @Data
 public class Verification_email {
     private String email;
-    private Integer verification_code;
+    private String verification_code;
     private Date expired;
 }

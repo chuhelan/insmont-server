@@ -19,7 +19,10 @@ package org.insmont.dao.mail;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.insmont.beans.subscribe.Subscribe_email;
+import org.insmont.beans.verification.Verification_email;
 import org.springframework.stereotype.Repository;
+
+import java.util.Date;
 
 /**
  * @author chuhelan
@@ -36,4 +39,11 @@ public interface MailDao {
 
     Subscribe_email selectEmail(String email);
 
+    Verification_email selectEmailVerify(String email, String code);
+
+    Verification_email selectEmailVerifyWithoutCode(String email);
+
+    int insertEmailVerify(String email, String verification_code, Date expired);
+
+    int updateEmailVerify(String email, String verification_code, Date expired);
 }

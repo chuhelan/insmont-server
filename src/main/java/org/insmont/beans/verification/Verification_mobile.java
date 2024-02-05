@@ -17,6 +17,8 @@
 
 package org.insmont.beans.verification;
 
+import lombok.Data;
+
 import java.util.Date;
 
 /**
@@ -26,9 +28,11 @@ import java.util.Date;
  * @package: org.insmont.beans
  * @Desc:
  */
+
+@Data
 public class Verification_mobile {
     private String mobile_code;
     private String mobile;
-    private Integer verification_code;
+    private String verification_code;
     private Date expired;
 }

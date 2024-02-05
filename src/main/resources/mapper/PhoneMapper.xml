@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (C) 2023 The Insmont Open Source Project
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.insmont.dao.phone.PhoneDao">
+
+    <insert id="insertVerificationMobile">
+        insert into verification_mobile(mobile_code, mobile, verification_code, expired)
+        VALUES ('0086', #{mobile}, #{verification_code}, #{expired})
+    </insert>
+
+    <update id="updateVerificationMobile">
+        update verification_mobile
+        set verification_code = #{verification_code},
+            expired           = #{expired}
+        where mobile = #{mobile}
+    </update>
+
+    <select id="selectVerificationMobileByPhone"
+            resultType="org.insmont.beans.verification.Verification_mobile">
+        select mobile_code, mobile, verification_code, expired
+        from verification_mobile
+        where mobile = #{phone}
+    </select>
+
+
+</mapper>

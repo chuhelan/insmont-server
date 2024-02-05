@@ -36,7 +36,7 @@ public class HideStringUtil {
      * @param phoneNumber The input phone number to hide.
      * @return The phone number with middle digits replaced by asterisks.
      */
-    private static String hidePhone(String phoneNumber) {
+    public static String hidePhone(String phoneNumber) {
         return phoneNumber.replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2");
     }
 
@@ -46,7 +46,7 @@ public class HideStringUtil {
      * @param email The input email address to hide.
      * @return The email address with parts replaced by asterisks.
      */
-    private static String hideEmail(String email) {
+    public static String hideEmail(String email) {
         return email.replaceAll("(\\w?)(\\w+)(\\w)(@\\w+\\.[a-z]+(\\.[a-z]+)?)", "$1****$3$4");
     }
 
@@ -56,7 +56,7 @@ public class HideStringUtil {
      * @param idCard The input ID card number to hide.
      * @return The ID card number with middle digits replaced by asterisks.
      */
-    private static String hideIdCard(String idCard) {
+    public static String hideIdCard(String idCard) {
         return idCard.replaceAll("(\\d{4})\\d{10}(\\w{4})", "$1*****$2");
     }
 }

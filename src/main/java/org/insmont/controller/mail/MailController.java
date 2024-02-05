@@ -65,4 +65,36 @@ public class MailController {
             };
         }
     }
+
+    @PostMapping("/mailCode")
+    public String mailCode(String email) {
+
+        int code = mailService.sendCode(email);
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("email", email);
+
+        return switch (code) {
+            case 200 -> gson.toJson(new CodeMessageData(200, "success", jsonObject));
+            case 400 -> gson.toJson(new CodeMessageData(400, "email is null", jsonObject));
+            case 401 -> gson.toJson(new CodeMessageData(401, "email is not valid", jsonObject));
+            case 403 -> gson.toJson(new CodeMessageData(403, "send failed", jsonObject));
+            default -> gson.toJson(new CodeMessageData(500, "thread error", jsonObject));
+        };
+    }
+
+    @PostMapping("/mailVerifyCode")
+    public String mailVerifyCode(String email, String code) {
+        int result = mailService.verify(email, code);
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("email", email);
+
+        return switch (result) {
+            case 200 -> gson.toJson(new CodeMessageData(200, "success", jsonObject));
+            case 400 -> gson.toJson(new CodeMessageData(400, "email or code is null", jsonObject));
+            case 401 -> gson.toJson(new CodeMessageData(401, "email is not valid", jsonObject));
+            case 403 -> gson.toJson(new CodeMessageData(403, "code is expired", jsonObject));
+            case 404 -> gson.toJson(new CodeMessageData(404, "code is not match", jsonObject));
+            default -> gson.toJson(new CodeMessageData(500, "thread error", jsonObject));
+        };
+    }
 }

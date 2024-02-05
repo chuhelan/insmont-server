@@ -19,12 +19,16 @@ package org.insmont.service.impl.mail;
 
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
+import org.insmont.beans.verification.Verification_email;
 import org.insmont.dao.mail.MailDao;
 import org.insmont.service.mail.MailService;
 import org.insmont.util.mail.MailUtil;
+import org.insmont.util.string.HideStringUtil;
+import org.insmont.util.string.RandomCodeUtil;
 import org.insmont.util.string.StringUtil;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -49,6 +53,7 @@ public class MailServiceImpl implements MailService {
     @Resource
     MailUtil mailUtil;
     String subscribeEmailTemplate = "SubscribeEmail";
+    String verifyEmailTemplate = "VerificationEmail";
 
     /*
      * 发送订阅成功邮件成功后添加到数据库
@@ -82,6 +87,73 @@ public class MailServiceImpl implements MailService {
             }
         } else {
             return 401;
+        }
+    }
+
+
+    /*
+     *       200 验证成功  400 email或code为空 401 email格式不正确 403 code已过期 404 code不匹配
+     * */
+    @Override
+    public int verify(String email, String code) {
+
+        if (email.isEmpty() || code.isEmpty()) {
+            return 400;
+        }
+
+        if (!stringUtil.isEmail(email)) {
+            return 401;
+        }
+
+        Verification_email verification_email = mailDao.selectEmailVerify(email, code);
+
+        if (verification_email == null || !verification_email.getVerification_code().equals(code)) {
+            return 404;
+        }
+
+        if (verification_email.getExpired().before(new Date())) {
+            return 403;
+        }
+        return 200;
+    }
+
+
+    /*
+     *      200 发送成功  400 email为空  403邮件发送失败 500 线程错误
+     * */
+    @Override
+    public int sendCode(String email) {
+
+        if (email.isEmpty()) {
+            return 400;
+        }
+
+        if (!stringUtil.isEmail(email)) {
+            return 401;
+        }
+
+        Map<String, Object> dataMap = new HashMap<>();
+        String code = RandomCodeUtil.generateRandom6DigitCode();
+        dataMap.put("user_email", HideStringUtil.hideEmail(email));
+        dataMap.put("ver_code", code);
+        Date expired = new Date(System.currentTimeMillis() + 5 * 60 * 1000);
+
+        CompletableFuture<String> future = mailUtil.sendTemplateMail(email, "邮箱验证", verifyEmailTemplate, dataMap);
+
+        try {
+            String result = future.join();
+            if (result.equals("邮件发送成功")) {
+                if (mailDao.selectEmailVerifyWithoutCode(email) == null) {
+                    mailDao.insertEmailVerify(email, code, expired);
+                } else {
+                    mailDao.updateEmailVerify(email, code, expired);
+                }
+                return 200;
+            } else {
+                return 403;
+            }
+        } catch (CompletionException ex) {
+            return 500;
         }
     }
 }

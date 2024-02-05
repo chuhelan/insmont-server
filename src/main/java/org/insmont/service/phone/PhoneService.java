@@ -15,19 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.insmont.service.mail;
+package org.insmont.service.phone;
 
 /**
  * @author chuhelan
  * @version 1.0
- * @date Wednesday 31 January 2024 3:49 PM
- * @package: org.insmont.service.mail
+ * @date Sunday 04 February 2024 10:46 PM
+ * @package: org.insmont.service.phone
  * @Desc:
  */
-public interface MailService {
-    int subscribe(String email);
+public interface PhoneService {
+    int phoneCode(String phone);
 
-    int verify(String email, String code);
-
-    int sendCode(String email);
+    int phoneVerifyCode(String phone, String code);
 }

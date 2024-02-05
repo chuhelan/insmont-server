@@ -25,9 +25,35 @@
         values (#{email}, now())
     </insert>
 
+    <insert id="insertEmailVerify">
+        insert into verification_email(email, verification_code, expired)
+        VALUES (#{email}, #{verification_code}, #{expired})
+    </insert>
+
+
+    <update id="updateEmailVerify">
+        update verification_email
+        set verification_code = #{verification_code},
+            expired           = #{expired}
+        where email = #{email}
+    </update>
+
+
     <select id="selectEmail" resultType="org.insmont.beans.subscribe.Subscribe_email">
         select email, datetime
         from subscribe_email
+        where email = #{email}
+    </select>
+
+    <select id="selectEmailVerify" resultType="org.insmont.beans.verification.Verification_email">
+        select email, verification_code, expired
+        from verification_email
+        where email = #{email}
+    </select>
+
+    <select id="selectEmailVerifyWithoutCode" resultType="org.insmont.beans.verification.Verification_email">
+        select email, verification_code, expired
+        from verification_email
         where email = #{email}
     </select>
 </mapper>

@@ -15,19 +15,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.insmont.service.mail;
+package org.insmont.dao.phone;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.insmont.beans.verification.Verification_mobile;
+import org.springframework.stereotype.Repository;
+
+import java.util.Date;
 
 /**
  * @author chuhelan
  * @version 1.0
- * @date Wednesday 31 January 2024 3:49 PM
- * @package: org.insmont.service.mail
+ * @date Sunday 04 February 2024 11:35 PM
+ * @package: org.insmont.dao.phone
  * @Desc:
  */
-public interface MailService {
-    int subscribe(String email);
 
-    int verify(String email, String code);
+@Mapper
+@Repository
+public interface PhoneDao {
 
-    int sendCode(String email);
+    Verification_mobile selectVerificationMobileByPhone(String phone);
+
+    int insertVerificationMobile(String mobile, String verification_code, Date expired);
+
+    int updateVerificationMobile(String mobile, String verification_code, Date expired);
 }
