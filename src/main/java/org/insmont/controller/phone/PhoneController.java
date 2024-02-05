@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.insmont.model.CodeMessageData;
-import org.insmont.service.mail.MailService;
 import org.insmont.service.phone.PhoneService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

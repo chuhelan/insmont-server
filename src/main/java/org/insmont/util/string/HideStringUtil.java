@@ -17,8 +17,8 @@
 
 package org.insmont.util.string;
 
-/**
- * @author chuhelan
+/*
+  @author chuhelan
  * @version 1.0
  * @date Monday 16 October 2023 8:14 AM
  * @package: org.insmont.util

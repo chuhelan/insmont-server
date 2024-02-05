@@ -43,15 +43,6 @@ import java.util.concurrent.CompletableFuture;
 @Component
 public class PhoneUtil {
 
-    /**
-     * 使用AK&SK初始化账号Client
-     *
-     * @param accessKeyId
-     * @param accessKeySecret
-     * @return Client
-     * @throws Exception
-     */
-
     @Value("${aliyun.accessKeyId}")
     private String keyId;
 

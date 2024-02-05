@@ -21,7 +21,6 @@ import com.google.gson.Gson;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import org.insmont.model.CodeMessage;
-import org.insmont.model.CodeMessageData;
 import org.insmont.service.user.UserService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
