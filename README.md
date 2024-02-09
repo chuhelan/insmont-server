@@ -26,4 +26,4 @@
 
 [![license](https://img.shields.io/badge/license-GPL--3.0-da282a)](https://github.com/Insmont/insmont-server/blob/main/LICENSE)
 
-Insmont 采用GPL-v3.0许可证进行开源。请遵守开源协议。
+Insmont 采用 GPL-v3.0 许可证进行开源。请遵守开源协议。
