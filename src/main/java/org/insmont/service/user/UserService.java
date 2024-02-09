@@ -27,4 +27,7 @@ public interface UserService {
 
     String register(String key, String password) throws Exception;
 
+    String login(String key, String password);
+
+    String login2fa(String key, String code);
 }

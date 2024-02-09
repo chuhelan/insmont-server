@@ -18,9 +18,11 @@
 package org.insmont.controller.user;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import org.insmont.model.CodeMessage;
+import org.insmont.model.CodeMessageData;
 import org.insmont.service.user.UserService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,15 +49,99 @@ public class UserController {
 
     @SneakyThrows
     @PostMapping("register")
-    public String registerUser(String key,String password){
+    public String registerUser(String key, String password) {
         if (key == null || password == null || key.isEmpty() || password.isEmpty())
-            return gson.toJson(new CodeMessage(400,"邮箱或手机号为空"));
+            return gson.toJson(new CodeMessage(400, "邮箱或手机号为空"));
         return switch (userService.register(key, password)) {
-            case "400" -> gson.toJson(new CodeMessage(401,"手机号或邮箱格式错误"));
-            case "403" -> gson.toJson(new CodeMessage(402,"账号已存在"));
-            case "200" -> gson.toJson(new CodeMessage(200,"注册成功"));
-            default -> gson.toJson(new CodeMessage(500,"未知错误"));
+            case "400" -> gson.toJson(new CodeMessage(401, "手机号或邮箱格式错误"));
+            case "403" -> gson.toJson(new CodeMessage(402, "账号已存在"));
+            case "200" -> gson.toJson(new CodeMessage(200, "注册成功"));
+            default -> gson.toJson(new CodeMessage(500, "未知错误"));
         };
+    }
+
+    @PostMapping("/login")
+    public String login(String key, String password) {
+        String status = userService.login(key, password);
+        JsonObject returnData = new JsonObject();
+        int code = 500;
+        String message = "thread error";
+
+        if (status.equals("401")) {
+            code = 401;
+            message = "Account or password error";
+            returnData.addProperty("login object", key);
+            return gson.toJson(new CodeMessageData(code, message, returnData));
+        }
+
+        if (status.equals("201")) {
+            code = 201;
+            message = "Double verification";
+            returnData.addProperty("login object", key);
+            return gson.toJson(new CodeMessageData(code, message, returnData));
+        }
+
+        if (status.length() > 3) {
+            code = 200;
+            message = "Login success";
+            returnData.addProperty("token", status);
+            returnData.addProperty("login object", key);
+            return gson.toJson(new CodeMessageData(code, message, returnData));
+        }
+
+        return gson.toJson(new CodeMessageData(code, message, returnData));
+    }
+
+    @PostMapping("/login/2fa")
+    public String login2fa(String key, String code) {
+        String status = userService.login2fa(key, code);
+        JsonObject returnData = new JsonObject();
+        int returnCode = 500;
+        String message = "thread error";
+
+        if (status.equals("400")) {
+            returnCode = 400;
+            message = "email, phone or code is null";
+            returnData.addProperty("login object", key);
+            return gson.toJson(new CodeMessageData(returnCode, message, returnData));
+        }
+
+        if (status.equals("401")) {
+            returnCode = 401;
+            message = "email or phone is not valid";
+            returnData.addProperty("login object", key);
+            return gson.toJson(new CodeMessageData(returnCode, message, returnData));
+        }
+
+        if (status.equals("402")) {
+            returnCode = 402;
+            message = "send code failed";
+            returnData.addProperty("login object", key);
+            return gson.toJson(new CodeMessageData(returnCode, message, returnData));
+        }
+
+        if (status.equals("403")) {
+            returnCode = 403;
+            message = "verify failed";
+            returnData.addProperty("login object", key);
+            return gson.toJson(new CodeMessageData(returnCode, message, returnData));
+        }
+
+        if (status.equals("404")) {
+            returnCode = 404;
+            message = "user not found";
+            returnData.addProperty("login object", key);
+            return gson.toJson(new CodeMessageData(returnCode, message, returnData));
+        }
+
+        if (status.length() > 3) {
+            returnCode = 200;
+            message = "login success";
+            returnData.addProperty("token", status);
+            returnData.addProperty("login object", key);
+            return gson.toJson(new CodeMessageData(returnCode, message, returnData));
+        }
+        return gson.toJson(new CodeMessageData(returnCode, message, returnData));
     }
 
 }

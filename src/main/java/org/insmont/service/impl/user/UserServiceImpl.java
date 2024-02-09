@@ -18,14 +18,26 @@
 package org.insmont.service.impl.user;
 
 import jakarta.annotation.Resource;
+import lombok.SneakyThrows;
+import org.insmont.beans.user.Login_record;
 import org.insmont.beans.user.User;
+import org.insmont.beans.verification.Verification_email;
+import org.insmont.beans.verification.Verification_mobile;
+import org.insmont.dao.mail.MailDao;
+import org.insmont.dao.phone.PhoneDao;
 import org.insmont.dao.user.UserDao;
 import org.insmont.service.user.UserService;
+import org.insmont.util.expire.TokenExpired;
 import org.insmont.util.id.GenerateUid;
+import org.insmont.util.ip.DeviceDetector;
 import org.insmont.util.ip.IpUtil;
 import org.insmont.util.ip.RegionUtil;
 import org.insmont.util.string.StringUtil;
 import org.springframework.stereotype.Service;
+
+import java.math.BigInteger;
+import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * @author chuhelan
@@ -43,6 +55,10 @@ public class UserServiceImpl implements UserService {
 
     @Resource
     UserDao userDao;
+    @Resource
+    PhoneDao phoneDao;
+    @Resource
+    MailDao mailDao;
 
     /**
      * 通过传入的key判断是手机号还是邮箱号
@@ -86,10 +102,123 @@ public class UserServiceImpl implements UserService {
                 userDao.insertUserWithEmail(user);
             }
             return "200";
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return "500";
         }
 
+    }
+
+
+    /**
+     * 使用用户登录特征，还有密码
+     * 验证用户存在返回token，特征或密码错误返回401
+     */
+    @SneakyThrows
+    @Override
+    public String login(String key, String password) {
+
+        User user = stringUtil.isMobilePhone(key) ? userDao.selectUserByPhone(key) : userDao.selectUserByEmail(key);
+        String device = DeviceDetector.getDevice();
+
+        if (user == null || !user.getPassword().equals(password)) {
+            return "401";
+        }
+
+        TokenExpired tokenExpired = new TokenExpired();
+        String token = tokenExpired.getTokenExpire().getToken();
+        LocalDateTime expire = LocalDateTime.from(tokenExpired.getTokenExpire().getExpire());
+
+        int recordLoginCode = recordLogin(user.getId());
+        if (recordLoginCode == 201) {
+            return "201";
+        } else if (recordLoginCode == 200) {
+            userDao.updateUserToken(user.getId(), token, expire);
+            return token;
+        } else {
+            return "500";
+        }
+    }
+
+
+    /**
+     * 200 成功 返回token
+     * 400 内容为空
+     * 401 邮箱或手机号格式错误
+     * 402 验证码发送失败
+     * 403 验证失败 -> 不匹配或者过期
+     * 404 用户不存在
+     * 500 未知错误
+     */
+    @SneakyThrows
+    @Override
+    public String login2fa(String key, String code) {
+
+        if (key == null || code == null || key.isEmpty() || code.isEmpty()) {
+            return "400";
+        }
+
+        if (!stringUtil.isMobilePhone(key) && !stringUtil.isEmail(key)) {
+            return "401";
+        }
+
+        User user = stringUtil.isMobilePhone(key) ? userDao.selectUserByPhone(key) : userDao.selectUserByEmail(key);
+
+        if (user == null) {
+            return "404";
+        }
+
+        Verification_mobile verificationMobile = new Verification_mobile();
+        Verification_email verificationEmail = new Verification_email();
+
+        if (stringUtil.isMobilePhone(key)) {
+            verificationMobile = phoneDao.selectVerificationMobileByPhone(key);
+            if (verificationMobile == null) {
+                return "402";
+            } else if ((!verificationMobile.getVerification_code().equals(code) || verificationMobile.getExpired().before(new Date()))) {
+                return "403";
+            }
+        } else if (stringUtil.isEmail(key)) {
+            verificationEmail = mailDao.selectEmailVerifyWithoutCode(key);
+            if (verificationEmail == null) {
+                return "402";
+            } else if ((!verificationEmail.getVerification_code().equals(code) || verificationEmail.getExpired().before(new Date()))) {
+                return "403";
+            }
+        }
+
+        TokenExpired tokenExpired = new TokenExpired();
+        String token = tokenExpired.getTokenExpire().getToken();
+        LocalDateTime expire = LocalDateTime.from(tokenExpired.getTokenExpire().getExpire());
+
+        String device = DeviceDetector.getDevice();
+        String ipv4 = IpUtil.getCallerIp().get(0);
+        String ipv6 = IpUtil.getCallerIp().get(1);
+        String location = RegionUtil.getRegion(ipv4);
+
+        userDao.updateUserToken(user.getId(), token, expire);
+        userDao.insertRecordInfo(user.getId(), device, ipv4, ipv6, location);
+        return token;
+    }
+
+    public int recordLogin(BigInteger id) throws Exception {
+        String device = DeviceDetector.getDevice();
+        String ipv4 = IpUtil.getCallerIp().get(0);
+        String ipv6 = IpUtil.getCallerIp().get(1);
+        String location = RegionUtil.getRegion(ipv4);
+
+        Login_record login_record = userDao.selectLatestRecordInfoByUserId(id);
+
+        if (login_record == null) {
+            userDao.insertRecordInfo(id, device, ipv4, ipv6, location);
+            return 200;
+        }
+
+        if (!login_record.getDevice().equals(device) || !login_record.getLocation().equals(location)) {
+            return 201;
+        } else {
+            userDao.insertRecordInfo(id, device, ipv4, ipv6, location);
+            return 200;
+        }
     }
 }

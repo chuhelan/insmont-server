@@ -33,6 +33,18 @@
                 #{registration_region})
     </insert>
 
+    <insert id="insertRecordInfo">
+        insert into login_record (id, device, ipv4, ipv6, location, datetime)
+        values (#{id}, #{device}, #{ipv4}, #{ipv6}, #{location}, now())
+    </insert>
+
+    <update id="updateUserToken">
+        update user
+        set session = #{token},
+            expired = #{expired}
+        where id = #{id}
+    </update>
+
     <select id="selectUserByPhone" resultType="org.insmont.beans.user.User">
         select id,
                username,
@@ -64,5 +76,13 @@
                registration_region
         from user
         where email = #{email}
+    </select>
+
+    <select id="selectLatestRecordInfoByUserId" resultType="org.insmont.beans.user.Login_record">
+        select id, device, ipv4, ipv6, location, datetime
+        from login_record
+        where id = #{id}
+        order by datetime desc
+        limit 1
     </select>
 </mapper>
