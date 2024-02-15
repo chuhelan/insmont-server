@@ -38,10 +38,21 @@
         values (#{id}, #{device}, #{ipv4}, #{ipv6}, #{location}, now())
     </insert>
 
+    <insert id="insertProfileAvatarWithId">
+        insert into profile (id, avatar)
+        values (#{id}, #{avatar})
+    </insert>
+
     <update id="updateUserToken">
         update user
         set session = #{token},
             expired = #{expired}
+        where id = #{id}
+    </update>
+
+    <update id="updateProfileLocationWithId">
+        update profile
+        set location = #{location}
         where id = #{id}
     </update>
 

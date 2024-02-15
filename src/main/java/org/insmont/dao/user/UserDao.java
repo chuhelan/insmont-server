@@ -37,9 +37,11 @@ import java.time.LocalDateTime;
 @Repository
 public interface UserDao {
     User selectUserByPhone(String phone);
+
     User selectUserByEmail(String email);
 
     int insertUserWithPhone(User user);
+
     int insertUserWithEmail(User user);
 
     int updateUserToken(BigInteger id, String token, LocalDateTime expired);
@@ -47,4 +49,8 @@ public interface UserDao {
     Login_record selectLatestRecordInfoByUserId(BigInteger id);
 
     int insertRecordInfo(BigInteger id, String device, String ipv4, String ipv6, String location);
+
+    int insertProfileAvatarWithId(BigInteger id, String avatar);
+
+    int updateProfileLocationWithId(BigInteger id, String location);
 }

@@ -60,6 +60,10 @@ dependencies {
     // https://mvnrepository.com/artifact/com.aliyun/credentials-java
     implementation 'com.aliyun:credentials-java:0.3.0'
 
+    // https://mvnrepository.com/artifact/com.jayway.jsonpath/json-path
+    implementation 'com.jayway.jsonpath:json-path:2.9.0'
+
+
 
 }
 

@@ -29,8 +29,10 @@ import java.util.Date;
  * @Desc:
  */
 public class GenerateUid {
+
     private static long lastTimestamp = 0;
-    public synchronized String generatePrefix() {
+
+    public static synchronized String generatePrefix() {
         SimpleDateFormat yearMonthFormat = new SimpleDateFormat("yyMM");
         return yearMonthFormat.format(new Date());
     }
@@ -55,7 +57,9 @@ public class GenerateUid {
 
         lastTimestamp = currentTimestamp;
         long unique7Digit = currentTimestamp % 10000000;
+        String unique7DigitStr = String.format("%07d", unique7Digit);
 
-        return new BigInteger(generatePrefix() + String.valueOf(unique7Digit));
+        return new BigInteger(generatePrefix() + unique7DigitStr);
     }
+
 }

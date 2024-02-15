@@ -29,6 +29,7 @@ import org.insmont.dao.user.UserDao;
 import org.insmont.service.user.UserService;
 import org.insmont.util.expire.TokenExpired;
 import org.insmont.util.id.GenerateUid;
+import org.insmont.util.identicon.IdentIconUtil;
 import org.insmont.util.ip.DeviceDetector;
 import org.insmont.util.ip.IpUtil;
 import org.insmont.util.ip.RegionUtil;
@@ -101,6 +102,7 @@ public class UserServiceImpl implements UserService {
                 System.out.println("user = " + user);
                 userDao.insertUserWithEmail(user);
             }
+            userDao.insertProfileAvatarWithId(user.getId(), IdentIconUtil.getUploadUrl(user.getUsername()));
             return "200";
         } catch (Exception e) {
             e.printStackTrace();
@@ -128,12 +130,17 @@ public class UserServiceImpl implements UserService {
         TokenExpired tokenExpired = new TokenExpired();
         String token = tokenExpired.getTokenExpire().getToken();
         LocalDateTime expire = LocalDateTime.from(tokenExpired.getTokenExpire().getExpire());
+        String ipv4 = IpUtil.getCallerIp().get(0);
+        String ipv6 = IpUtil.getCallerIp().get(1);
+        String location = RegionUtil.getRegion(ipv4);
 
         int recordLoginCode = recordLogin(user.getId());
         if (recordLoginCode == 201) {
             return "201";
         } else if (recordLoginCode == 200) {
             userDao.updateUserToken(user.getId(), token, expire);
+            userDao.insertRecordInfo(user.getId(), device, ipv4, ipv6, location);
+            userDao.updateProfileLocationWithId(user.getId(),location);
             return token;
         } else {
             return "500";
@@ -198,6 +205,7 @@ public class UserServiceImpl implements UserService {
 
         userDao.updateUserToken(user.getId(), token, expire);
         userDao.insertRecordInfo(user.getId(), device, ipv4, ipv6, location);
+        userDao.updateProfileLocationWithId(user.getId(),location);
         return token;
     }
 
