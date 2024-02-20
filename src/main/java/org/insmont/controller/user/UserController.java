@@ -21,13 +21,11 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
+import org.insmont.dao.user.UserDao;
 import org.insmont.model.CodeMessage;
 import org.insmont.model.CodeMessageData;
 import org.insmont.service.user.UserService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author chuhelan
@@ -143,5 +141,25 @@ public class UserController {
         }
         return gson.toJson(new CodeMessageData(returnCode, message, returnData));
     }
+
+    @PostMapping("/user/verify")
+    public String verifyToken(String id,String token){
+        int status = userService.verifyToken(id,token);
+        if (status == 200){
+            return gson.toJson(new CodeMessage(200,"success"));
+        }else if(status == 401){
+            return gson.toJson(new CodeMessage(401,"failed"));
+        }else if(status == 404){
+            return gson.toJson(new CodeMessage(404,"user not found"));
+        }else {
+            return gson.toJson(new CodeMessage(500,"unknown error"));
+        }
+    }
+
+    @GetMapping("user/info")
+    public String getUserInfo(String id){
+        return gson.toJson(userService.getUserInfo(id));
+    }
+
 
 }

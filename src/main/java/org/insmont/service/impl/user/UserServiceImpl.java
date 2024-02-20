@@ -17,15 +17,18 @@
 
 package org.insmont.service.impl.user;
 
+import com.google.gson.JsonObject;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import org.insmont.beans.user.Login_record;
+import org.insmont.beans.user.Profile;
 import org.insmont.beans.user.User;
 import org.insmont.beans.verification.Verification_email;
 import org.insmont.beans.verification.Verification_mobile;
 import org.insmont.dao.mail.MailDao;
 import org.insmont.dao.phone.PhoneDao;
 import org.insmont.dao.user.UserDao;
+import org.insmont.model.CodeMessageData;
 import org.insmont.service.user.UserService;
 import org.insmont.util.expire.TokenExpired;
 import org.insmont.util.id.GenerateUid;
@@ -33,12 +36,14 @@ import org.insmont.util.identicon.IdentIconUtil;
 import org.insmont.util.ip.DeviceDetector;
 import org.insmont.util.ip.IpUtil;
 import org.insmont.util.ip.RegionUtil;
+import org.insmont.util.encryption.EncryptionUtil;
 import org.insmont.util.string.StringUtil;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Optional;
 
 /**
  * @author chuhelan
@@ -70,6 +75,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public String register(String key, String password) throws Exception {
+        password = EncryptionUtil.encryptPassword(password);
         try {
             if (stringUtil.isMobilePhone(key)) {
                 if (userDao.selectUserByPhone(key) != null) {
@@ -120,6 +126,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public String login(String key, String password) {
 
+        password = EncryptionUtil.encryptPassword(password);
+
         User user = stringUtil.isMobilePhone(key) ? userDao.selectUserByPhone(key) : userDao.selectUserByEmail(key);
         String device = DeviceDetector.getDevice();
 
@@ -129,6 +137,7 @@ public class UserServiceImpl implements UserService {
 
         TokenExpired tokenExpired = new TokenExpired();
         String token = tokenExpired.getTokenExpire().getToken();
+        String newToken = token + "|" + user.getId();
         LocalDateTime expire = LocalDateTime.from(tokenExpired.getTokenExpire().getExpire());
         String ipv4 = IpUtil.getCallerIp().get(0);
         String ipv6 = IpUtil.getCallerIp().get(1);
@@ -140,8 +149,8 @@ public class UserServiceImpl implements UserService {
         } else if (recordLoginCode == 200) {
             userDao.updateUserToken(user.getId(), token, expire);
             userDao.insertRecordInfo(user.getId(), device, ipv4, ipv6, location);
-            userDao.updateProfileLocationWithId(user.getId(),location);
-            return token;
+            userDao.updateProfileLocationWithId(user.getId(), location);
+            return newToken;
         } else {
             return "500";
         }
@@ -196,6 +205,7 @@ public class UserServiceImpl implements UserService {
 
         TokenExpired tokenExpired = new TokenExpired();
         String token = tokenExpired.getTokenExpire().getToken();
+        String newToken = token + "|" + user.getId();
         LocalDateTime expire = LocalDateTime.from(tokenExpired.getTokenExpire().getExpire());
 
         String device = DeviceDetector.getDevice();
@@ -205,8 +215,44 @@ public class UserServiceImpl implements UserService {
 
         userDao.updateUserToken(user.getId(), token, expire);
         userDao.insertRecordInfo(user.getId(), device, ipv4, ipv6, location);
-        userDao.updateProfileLocationWithId(user.getId(),location);
-        return token;
+        userDao.updateProfileLocationWithId(user.getId(), location);
+        return newToken;
+    }
+
+    @Override
+    public int verifyToken(String id, String token) {
+        User user = userDao.selectUserTokenById(id);
+        if(user == null){
+            return 404;
+        }else if(user.getSession().equals(token)){
+            return 200;
+        }else{
+            return 401;
+        }
+    }
+
+    @Override
+    public CodeMessageData getUserInfo(String id) {
+        Profile profileInfo = userDao.getUserProfileWithId(id);
+
+        if (profileInfo == null) {
+            return new CodeMessageData(404, "user not found", null);
+        }
+
+        JsonObject returnData = new JsonObject();
+        returnData.addProperty("username", userDao.getAllUserInfoWithId(id).getUsername());
+        returnData.addProperty("avatar", Optional.ofNullable(profileInfo.getAvatar()).orElse(""));
+        returnData.addProperty("bio", Optional.ofNullable(profileInfo.getBio()).orElse(""));
+        returnData.addProperty("location", Optional.ofNullable(profileInfo.getLocation()).orElse(""));
+        returnData.addProperty("gender", Optional.ofNullable(profileInfo.getGender()).orElse(""));
+        returnData.addProperty("birthday", Optional.ofNullable(profileInfo.getBirthday()).map(String::valueOf).orElse(""));
+        returnData.addProperty("constellation", Optional.ofNullable(profileInfo.getConstellation()).orElse(""));
+        returnData.addProperty("certification", Optional.ofNullable(profileInfo.getCertification()).orElse(""));
+        returnData.addProperty("state", Optional.ofNullable(profileInfo.getState()).orElse(""));
+        returnData.addProperty("credit", profileInfo.getCredit());
+        returnData.addProperty("verification", profileInfo.getVerification());
+
+        return new CodeMessageData(200, "success", returnData);
     }
 
     public int recordLogin(BigInteger id) throws Exception {

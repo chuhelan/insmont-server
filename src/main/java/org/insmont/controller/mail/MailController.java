@@ -23,10 +23,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.insmont.model.CodeMessageData;
 import org.insmont.service.mail.MailService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author chuhelan
@@ -35,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @package: org.insmont.controller.mail
  * @Desc:
  */
+
 
 @Slf4j
 @RestController

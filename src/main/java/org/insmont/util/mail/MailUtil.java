@@ -45,6 +45,7 @@ import java.util.concurrent.CompletableFuture;
 @Component
 public class MailUtil {
 
+    private final String nickName = "Insmont 中国";
     @Resource
     private JavaMailSender javaMailSender;
 
@@ -70,7 +71,7 @@ public class MailUtil {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-            helper.setFrom(from);
+            helper.setFrom(nickName+'<'+from+'>');
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(templateContent, true);

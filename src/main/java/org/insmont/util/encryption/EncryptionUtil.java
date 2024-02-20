@@ -15,28 +15,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.insmont.service.user;
+package org.insmont.util.encryption;
 
-import org.insmont.beans.user.Profile;
-import org.insmont.model.CodeMessageData;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 /**
- * @author  chuhelan
- * @date  Tuesday 30 January 2024 1:24 PM
- * @package: org.insmont.service
+ * @author chuhelan
  * @version 1.0
+ * @date Tuesday 20 February 2024 4:18 PM
+ * @package: org.insmont.util.password
  * @Desc:
  */
+public class EncryptionUtil {
 
-public interface UserService {
-
-    String register(String key, String password) throws Exception;
-
-    String login(String key, String password);
-
-    String login2fa(String key, String code);
-
-    int verifyToken(String id, String token);
-
-    CodeMessageData getUserInfo(String id);
+    public static String encryptPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes());
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

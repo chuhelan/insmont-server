@@ -19,6 +19,7 @@ package org.insmont.dao.user;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.insmont.beans.user.Login_record;
+import org.insmont.beans.user.Profile;
 import org.insmont.beans.user.User;
 import org.springframework.stereotype.Repository;
 
@@ -53,4 +54,10 @@ public interface UserDao {
     int insertProfileAvatarWithId(BigInteger id, String avatar);
 
     int updateProfileLocationWithId(BigInteger id, String location);
+
+    User selectUserTokenById(String id);
+
+    User getAllUserInfoWithId(String id);
+
+    Profile getUserProfileWithId(String id);
 }
