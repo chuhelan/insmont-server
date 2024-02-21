@@ -66,6 +66,9 @@ public class UserServiceImpl implements UserService {
     @Resource
     MailDao mailDao;
 
+    @Resource
+    IdentIconUtil identIconUtil;
+
     /**
      * 通过传入的key判断是手机号还是邮箱号
      * 验证数据库都否有相同的key
@@ -108,7 +111,7 @@ public class UserServiceImpl implements UserService {
                 System.out.println("user = " + user);
                 userDao.insertUserWithEmail(user);
             }
-            userDao.insertProfileAvatarWithId(user.getId(), IdentIconUtil.getUploadUrl(user.getUsername()));
+            userDao.insertProfileAvatarWithId(user.getId(), identIconUtil.getUploadUrl(user.getUsername()));
             return "200";
         } catch (Exception e) {
             e.printStackTrace();

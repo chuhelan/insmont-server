@@ -44,11 +44,14 @@ public class AvatarController {
 
     Gson gson = new Gson();
 
+    @Resource
+    IdentIconUtil identIconUtil;
+
 
     @GetMapping("/avatar")
     public String getAvatarUrl(String username) {
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty(username, IdentIconUtil.getUploadUrl(username));
+        jsonObject.addProperty(username, identIconUtil.getUploadUrl(username));
         return gson.toJson(new CodeMessageData(200, "success", jsonObject));
     }
 }

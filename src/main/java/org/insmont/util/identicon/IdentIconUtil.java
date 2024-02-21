@@ -18,6 +18,7 @@
 package org.insmont.util.identicon;
 
 import com.jayway.jsonpath.JsonPath;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -42,7 +43,6 @@ import java.security.NoSuchAlgorithmException;
  */
 
 
-@Async
 @Component
 public class IdentIconUtil {
 
@@ -51,7 +51,12 @@ public class IdentIconUtil {
     private static final int PIXEL_SIZE = SIZE / GRID_SIZE;
     private static final long MASK = 0x1FFFFFFL;
 
-    private static final String UPLOAD_URL = "https://image.chuhelan.com/api/v1/upload";
+    @Value("${oos.upload.url}")
+    private String UPLOAD_URL;
+
+    @Value("${oos.upload.authorization}")
+    private String AUTHORIZATION;
+
     private static final String BOUNDARY = "boundary";
 
     public static BufferedImage generateIdenticon(String username) {
@@ -78,14 +83,12 @@ public class IdentIconUtil {
             }
         }
 
-        if (GRID_SIZE % 2 == 1) {
-            int center = GRID_SIZE / 2;
-            for (int i = 0; i < GRID_SIZE; i++) {
-                g.setColor((bits & 1) == 1 ? color : Color.WHITE);
-                g.fillRect(center * PIXEL_SIZE, i * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+        int center = GRID_SIZE / 2;
+        for (int i = 0; i < GRID_SIZE; i++) {
+            g.setColor((bits & 1) == 1 ? color : Color.WHITE);
+            g.fillRect(center * PIXEL_SIZE, i * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
 
-                bits >>= 1;
-            }
+            bits >>= 1;
         }
 
         g.dispose();
@@ -114,7 +117,7 @@ public class IdentIconUtil {
         return tempFile;
     }
 
-    public static String getUploadUrl(String username) {
+    public String getUploadUrl(String username) {
         BufferedImage avatar = generateIdenticon(username);
         String result = "";
         try {
@@ -129,12 +132,17 @@ public class IdentIconUtil {
         return result;
     }
 
-    private static String uploadFile(File imageFile) throws IOException {
+    private String uploadFile(File imageFile) throws IOException {
+        
+        if (UPLOAD_URL == null) {
+            throw new IllegalArgumentException("UPLOAD_URL cannot be null");
+        }
         URL url = new URL(UPLOAD_URL);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
+        connection.setRequestProperty("Authorization", "Bearer " + AUTHORIZATION);
 
         try (OutputStream os = connection.getOutputStream();
              PrintWriter writer = new PrintWriter(new OutputStreamWriter(os, "UTF-8"), true)) {
