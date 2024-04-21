@@ -50,14 +50,14 @@ public class IdentIconUtil {
     private static final int GRID_SIZE = 5;
     private static final int PIXEL_SIZE = SIZE / GRID_SIZE;
     private static final long MASK = 0x1FFFFFFL;
-
-    @Value("${oos.upload.url}")
+    @Value("${oss.upload.url}")
     private String UPLOAD_URL;
 
-    @Value("${oos.upload.authorization}")
+    @Value("${oss.upload.authorization}")
     private String AUTHORIZATION;
 
     private static final String BOUNDARY = "boundary";
+
 
     public static BufferedImage generateIdenticon(String username) {
         byte[] hash = generateHash(username);

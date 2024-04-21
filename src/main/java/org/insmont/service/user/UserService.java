@@ -17,8 +17,13 @@
 
 package org.insmont.service.user;
 
-import org.insmont.beans.user.Profile;
 import org.insmont.model.CodeMessageData;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.math.BigInteger;
+import java.util.Date;
+import java.util.List;
 
 /**
  * @author  chuhelan
@@ -39,4 +44,22 @@ public interface UserService {
     int verifyToken(String id, String token);
 
     CodeMessageData getUserInfo(String id);
+
+    List<String> getRecommendUser(BigInteger id);
+
+    int updateAvatar(BigInteger id, MultipartFile avatar);
+
+    int updateBio(BigInteger id, String bio);
+
+    int updatePrivacy(BigInteger id, String search, String recommend);
+
+    int updatePassword(BigInteger id, String password);
+
+    int updateUserInfo(BigInteger id, String username, String gender, String birthday, String constellation);
+
+    int deleteUser(BigInteger id);
+
+    CodeMessageData getFollowingLatest(BigInteger id);
+
+    int isFollowed(BigInteger id, BigInteger targetUser);
 }

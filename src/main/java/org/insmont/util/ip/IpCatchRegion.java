@@ -19,7 +19,7 @@ package org.insmont.util.ip;
 
 import org.lionsoul.ip2region.xdb.Searcher;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,37 +31,44 @@ import java.util.concurrent.TimeUnit;
  */
 public class IpCatchRegion {
 
-    static String dbPath = "src/main/resources/ip2region.xdb";
-
     public static String cityRegion(String ip) throws Exception {
-        byte[] vIndex = new byte[0];
 
-        try {
-            vIndex = Searcher.loadVectorIndexFromFile(dbPath);
-        } catch (Exception e) {
-            System.out.printf("failed to load vector index from `%s`: %s\n", dbPath, e);
+        if (ip.equals("0:0:0:0:0:0:0:1") || ip.equals("::1")) {
+            return "localhost";
         }
 
-        Searcher searcher = null;
-        try {
-            searcher = Searcher.newWithVectorIndex(dbPath, vIndex);
-        } catch (Exception e) {
-            System.out.printf("failed to create vectorIndex cached searcher with `%s`: %s\n", dbPath, e);
-        }
+        try (InputStream inputStream = IpCatchRegion.class.getResourceAsStream("/ip2region.xdb")) {
 
-        try {
-            long sTime = System.nanoTime();
-            assert searcher != null;
-            String region = searcher.search(ip);
-            long cost = TimeUnit.NANOSECONDS.toMicros((long) (System.nanoTime() - sTime));
-            System.out.printf("{region: %s, ioCount: %d, took: %d μs}\n", region, searcher.getIOCount(), cost);
-            return region;
-        } catch (Exception e) {
-            System.out.printf("failed to search(%s): %s\n", ip, e);
+            File tempFile = File.createTempFile("ip2region", "temp");
+            try (FileOutputStream out = new FileOutputStream(tempFile)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+            }
+            try (RandomAccessFile raf = new RandomAccessFile(tempFile, "r")) {
+                byte[] vIndex = new byte[(int) raf.length()];
+
+                int totalBytesRead = 0;
+                int bytesRead;
+                while (totalBytesRead < vIndex.length && (bytesRead = raf.read(vIndex, totalBytesRead, vIndex.length - totalBytesRead)) != -1) {
+                    totalBytesRead += bytesRead;
+                }
+
+                Searcher searcher = new Searcher(tempFile.getAbsolutePath(), vIndex, vIndex);
+                try {
+                    long sTime = System.nanoTime();
+                    String region = searcher.search(ip);
+                    long cost = TimeUnit.NANOSECONDS.toMicros((long) (System.nanoTime() - sTime));
+                    System.out.printf("{region: %s, ioCount: %d, took: %d μs}\n", region, searcher.getIOCount(), cost);
+                    return region != null ? region : "Unknown";
+                } finally {
+                    searcher.close();
+                }
+            } finally {
+                tempFile.delete();
+            }
         }
-        assert searcher != null;
-        searcher.close();
-        return "未知";
     }
-
 }

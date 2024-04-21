@@ -21,11 +21,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
-import org.insmont.dao.user.UserDao;
 import org.insmont.model.CodeMessage;
 import org.insmont.model.CodeMessageData;
 import org.insmont.service.user.UserService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.math.BigInteger;
 
 /**
  * @author chuhelan
@@ -161,5 +163,87 @@ public class UserController {
         return gson.toJson(userService.getUserInfo(id));
     }
 
+    @GetMapping("user/recommend")
+    public String getRecommendUser(BigInteger id){
+        return gson.toJson(userService.getRecommendUser(id));
+    }
+
+    @PatchMapping("user/avatar/update")
+    public String updateAvatar(BigInteger id, MultipartFile avatar){
+        int code = userService.updateAvatar(id,avatar);
+        return switch (code) {
+            case 200 -> gson.toJson(new CodeMessage(200, "success"));
+            case 400 -> gson.toJson(new CodeMessage(400, "null avatar"));
+            case 401 -> gson.toJson(new CodeMessage(401, "failed"));
+            default -> gson.toJson(new CodeMessage(500, "thread error"));
+        };
+    }
+
+    @PatchMapping("user/bio/update")
+    public String updateBio(BigInteger id, String bio){
+        int code = userService.updateBio(id,bio);
+        return switch (code) {
+            case 200 -> gson.toJson(new CodeMessage(200, "success"));
+            case 401 -> gson.toJson(new CodeMessage(401, "failed"));
+            default -> gson.toJson(new CodeMessage(500, "thread error"));
+        };
+    }
+
+    @PutMapping("user/privacy/update")
+    public String updatePrivacy(BigInteger id, String search, String recommend){
+        int code = userService.updatePrivacy(id,search,recommend);
+        if (code == 200){
+            return gson.toJson(new CodeMessage(200,"success"));
+        }else if(code == 401){
+            return gson.toJson(new CodeMessage(401,"failed"));
+        }
+        return gson.toJson(new CodeMessage(500,"thread error"));
+    }
+
+    @PostMapping("user/password/update")
+    public String updatePassword(BigInteger id, String password){
+        int code = userService.updatePassword(id,password);
+        return switch (code) {
+            case 200 -> gson.toJson(new CodeMessage(200, "success"));
+            case 401 -> gson.toJson(new CodeMessage(401, "failed"));
+            default -> gson.toJson(new CodeMessage(500, "thread error"));
+        };
+    }
+
+    @PatchMapping("user/info/update")
+    public String updateUserInfo(BigInteger id, String username, String gender, String  birthday, String constellation){
+        int code = userService.updateUserInfo(id,username,gender,birthday,constellation);
+        return switch (code) {
+            case 200 -> gson.toJson(new CodeMessage(200, "success"));
+            case 401 -> gson.toJson(new CodeMessage(401, "failed"));
+            default -> gson.toJson(new CodeMessage(500, "thread error"));
+        };
+    }
+
+    @DeleteMapping("user/delete")
+    public String deleteUser(BigInteger id){
+        int code = userService.deleteUser(id);
+        return switch (code) {
+            case 200 -> gson.toJson(new CodeMessage(200, "success"));
+            case 404 -> gson.toJson(new CodeMessage(404, "user not found"));
+            default -> gson.toJson(new CodeMessage(401, "has been deleted"));
+        };
+    }
+
+    @GetMapping("user/following/latest")
+    public String getFollowingLatest(BigInteger id){
+        return gson.toJson(userService.getFollowingLatest(id));
+    }
+
+    @GetMapping("/followed")
+    public String isFollowed(BigInteger id, BigInteger targetUser){
+        int status = userService.isFollowed(id, targetUser);
+        return switch (status) {
+            case 200 -> gson.toJson(new CodeMessage(200, "success"));
+            case 401 -> gson.toJson(new CodeMessage(401, "false"));
+            case 404 -> gson.toJson(new CodeMessage(404, "user not found"));
+            default -> gson.toJson(new CodeMessage(500, "unknown error"));
+        };
+    }
 
 }

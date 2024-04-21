@@ -18,13 +18,14 @@
 package org.insmont.dao.user;
 
 import org.apache.ibatis.annotations.Mapper;
-import org.insmont.beans.user.Login_record;
-import org.insmont.beans.user.Profile;
-import org.insmont.beans.user.User;
+import org.insmont.beans.post.Follow;
+import org.insmont.beans.user.*;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigInteger;
 import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
 
 /**
  * @author chuhelan
@@ -60,4 +61,30 @@ public interface UserDao {
     User getAllUserInfoWithId(String id);
 
     Profile getUserProfileWithId(String id);
+
+    int insertPrivacyWithId(BigInteger id);
+
+    List<String> selectRecommendUser(BigInteger id);
+
+    int updateProfileAvatarWithId(BigInteger id, String avatar);
+
+    Privacy getUserPrivacyWithId(String id);
+
+    int updateProfileBioWithId(BigInteger id, String bio);
+
+    int updatePrivacyWithId(BigInteger id, String search, String recommend);
+
+    int updateUserPassword(BigInteger id, String password);
+
+    int updateUserInfoTableUser(BigInteger id, String username);
+
+    int updateUserInfoTableProfile(BigInteger id, String gender, String birthday, String constellation);
+
+    int deleteUser(BigInteger id);
+
+    List<Profile> selectLatestFollowingInfoByUserIdWithoutPrivacy(BigInteger id);
+
+    Follow getFollowed(BigInteger id, BigInteger following);
+
+    List<User> getPostLikeUsersWithPostId(BigInteger postId);
 }

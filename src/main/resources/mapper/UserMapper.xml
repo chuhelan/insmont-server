@@ -43,6 +43,11 @@
         values (#{id}, #{avatar})
     </insert>
 
+    <insert id="insertPrivacyWithId">
+        insert into privacy (id)
+        values (#{id})
+    </insert>
+
     <update id="updateUserToken">
         update user
         set session = #{token},
@@ -55,6 +60,57 @@
         set location = #{location}
         where id = #{id}
     </update>
+
+    <update id="updateProfileAvatarWithId">
+        update profile
+        set avatar = #{avatar}
+        where id = #{id}
+    </update>
+
+    <update id="updateProfileBioWithId">
+        update profile
+        set bio = #{bio}
+        where id = #{id}
+    </update>
+
+    <update id="updatePrivacyWithId">
+        update privacy
+        set search    = #{search},
+            recommend = #{recommend}
+        where id = #{id}
+    </update>
+
+    <update id="updateUserPassword">
+        update user
+        set password = #{password}
+        where id = #{id}
+    </update>
+
+    <update id="updateUserInfoTableUser">
+        UPDATE user
+        SET username = #{username}
+        WHERE id = #{id};
+    </update>
+
+    <update id="updateUserInfoTableProfile">
+        UPDATE profile
+        SET gender = #{gender},
+        <if test="birthday != null and birthday != ''">
+            birthday = #{birthday},
+        </if>
+        <if test="birthday == null or birthday == ''">
+            birthday = null,
+        </if>
+        constellation = #{constellation}
+        WHERE id = #{id};
+    </update>
+
+    <delete id="deleteUser">
+        delete
+        from user
+        where id = #{id}
+    </delete>
+
 
     <select id="selectUserByPhone" resultType="org.insmont.beans.user.User">
         select id,
@@ -135,4 +191,137 @@
         from user
         where id = #{id}
     </select>
+
+    <select id="selectRecommendUser" resultType="org.insmont.beans.user.Recommend">
+        SELECT u.id,
+               u.username,
+               p.avatar,
+               p.bio,
+               p.constellation,
+               p.state,
+               p.credit,
+               p.verification,
+               p.location,
+               (SELECT COUNT(*)
+                FROM follow
+                WHERE following = u.id) AS following_count,
+               (SELECT COUNT(*)
+                FROM follow
+                WHERE follower = u.id)  AS follower_count,
+               COALESCE(
+                       CASE
+                           WHEN u.id IN (SELECT f.following AS user_id
+                                         FROM follow f
+                                         WHERE f.follower IN
+                                               (SELECT following
+                                                FROM follow
+                                                WHERE follower = #{id}
+                                                  AND following
+                                                    !=
+                                                      #{id})
+                                         GROUP BY f.following
+                                         HAVING COUNT(*) >= 2) THEN 'common_followed_users'
+                           WHEN u.id IN (SELECT f.following AS user_id
+                                         FROM follow f
+                                                  JOIN follow f2 ON f.following = f2.following
+                                         WHERE f.follower IN
+                                               (SELECT following
+                                                FROM follow
+                                                WHERE follower = #{id}
+                                                  AND following
+                                                    !=
+                                                      #{id})
+                                         GROUP BY f.following
+                                         ORDER BY COUNT(f2.follower) DESC) THEN 'followers_most_followed_user'
+                           WHEN u.id IN (SELECT p.id
+                                         FROM profile p
+                                         WHERE p.birthday = (SELECT birthday FROM profile WHERE id = #{id})
+                                         UNION
+                                         SELECT p.id
+                                         FROM profile p
+                                         WHERE p.constellation = (SELECT constellation FROM profile WHERE id = #{id})
+                                         UNION
+                                         SELECT p.id
+                                         FROM profile p
+                                         WHERE p.certification = (SELECT certification FROM profile WHERE id = #{id})
+                                         UNION
+                                         SELECT p.id
+                                         FROM profile p
+                                         WHERE p.location = (SELECT location FROM profile WHERE id = #{id}))
+                               THEN 'common_profile'
+                           WHEN u.id IN (SELECT u.id
+                                         FROM user u
+                                         WHERE u.registration_date = (SELECT MAX(registration_date) FROM user)
+                                         UNION
+                                         SELECT u.id
+                                         FROM user u
+                                                  JOIN follow f ON u.id = f.following
+                                         WHERE f.follower = #{id}
+                                           AND u.id
+                                             !=
+                                               #{id}) THEN 'newest_or_common_registration'
+                           WHEN u.id IN (SELECT lr.id
+                                         FROM login_record lr
+                                         WHERE lr.ipv4 IN (SELECT ipv4 FROM login_record WHERE id = #{id})
+                                            OR lr.location IN (SELECT location FROM login_record WHERE id = #{id}))
+                               THEN 'same_ip_or_location'
+                           ELSE 'default_recommendation' -- 默认推荐途径
+                           END,
+                       'default_recommendation'
+               )                        AS recommendation_method
+        FROM user u
+                 JOIN profile p ON u.id = p.id
+        WHERE u.id
+            !=
+              #{id}
+          AND u.id IN (SELECT id FROM privacy WHERE recommend = 'true' OR recommend IS NULL)
+        ORDER BY u.id
+        LIMIT 5
+    </select>
+
+    <select id="getUserPrivacyWithId" resultType="org.insmont.beans.user.Privacy">
+        select id, search, recommend
+        from privacy
+        where id = #{id}
+    </select>
+
+    <select id="selectLatestFollowingInfoByUserIdWithoutPrivacy" resultType="org.insmont.beans.user.Profile">
+        SELECT u.id,
+               u.username,
+               p.avatar,
+               p.bio,
+               p.constellation,
+               p.state,
+               p.credit,
+               p.verification,
+               p.location
+        FROM follow f
+                 JOIN user u ON f.following = u.id
+                 JOIN privacy priv ON u.id = priv.id
+                 LEFT JOIN profile p ON f.following = p.id
+        WHERE f.follower = #{id}
+          AND priv.recommend = 'true'
+          AND p.state NOT IN ('Suspended', 'Closed', 'Delete')
+        ORDER BY f.time DESC
+        LIMIT 5;
+    </select>
+
+    <select id="getFollowed" resultType="org.insmont.beans.post.Follow">
+        SELECT follower, following, time
+        FROM follow
+        WHERE follower = #{id}
+          and following = #{following}
+    </select>
+
+    <select id="getPostLikeUsersWithPostId" resultType="org.insmont.beans.user.User">
+        SELECT u.id,
+               u.username,
+               p.avatar
+        FROM user u
+                 JOIN profile p ON u.id = p.id
+                 JOIN post_like pl ON u.id = pl.id
+        WHERE pl.post_id = #{post_id}
+        ORDER BY pl.datetime DESC
+    </select>
+
 </mapper>

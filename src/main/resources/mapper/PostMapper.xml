@@ -1,0 +1,263 @@
+<!--
+  ~ Copyright (C) 2023 The Insmont Open Source Project
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.insmont.dao.post.PostDao">
+
+
+    <insert id="insertPost" parameterType="map" useGeneratedKeys="true" keyProperty="post_id">
+        insert into post(id, content, location, visibility, comment_permission, datetime)
+        values (#{id}, #{content}, (select location from profile where profile.id = #{id}), #{visibility},
+                #{comment_permission},
+                CASE
+                    WHEN #{datetime} > now() THEN #{datetime}
+                    ELSE now()
+                    END)
+    </insert>
+
+    <insert id="insertPostImage" parameterType="map">
+        insert into post_image(post_id
+        <trim prefix=",">
+            <foreach collection="imageUrls" item="imageUrl" index="index" separator=",">
+                image_url${index + 1}
+            </foreach>
+        </trim>
+        )
+        values (#{post_id}
+        <trim prefix=",">
+            <foreach collection="imageUrls" item="imageUrl" separator=",">
+                #{imageUrl}
+            </foreach>
+        </trim>
+        );
+    </insert>
+
+    <insert id="insertPostLike">
+        insert into post_like(post_id, `id`, `datetime`)
+        values (#{post_id}, #{id}, now())
+    </insert>
+
+    <insert id="insertComment">
+        insert into comment (post_id, `id`, content, location, `datetime`)
+        values (#{post_id},
+                #{id},
+                #{content},
+                (select location from profile where profile.id = #{id}),
+                now())
+    </insert>
+
+    <update id="updatePostPrivacy">
+        update post
+        set visibility = #{visibility}
+        where post_id = #{post_id}
+    </update>
+
+    <delete id="deletePostLike">
+        delete
+        from post_like
+        where post_id = #{post_id}
+          and `id` = #{id}
+    </delete>
+
+    <delete id="deletePost">
+        delete
+        from post
+        where post_id = #{post_id}
+    </delete>
+
+    <select id="selectPostInfoByPostId" resultType="org.insmont.beans.post.Post_info">
+        SELECT pt.post_id,
+               pt.`id`                       AS author,
+               pt.content,
+               pt.`visibility`,
+               pt.`edit`,
+               pt.`comment_permission`,
+               pt.`location`,
+               COALESCE(pl.total_likes, 0)   AS total_likes,
+               COALESCE(c.total_comments, 0) AS total_comments,
+               COALESCE(pi.total_images, 0)  AS total_images,
+               pt.`datetime`
+        FROM post pt
+                 LEFT JOIN (SELECT post_id, COUNT(*) AS total_likes
+                            FROM post_like
+                            GROUP BY post_id) pl ON pt.post_id = pl.post_id
+                 LEFT JOIN (SELECT post_id, COUNT(*) AS total_comments
+                            FROM `comment`
+                            GROUP BY post_id) c ON pt.post_id = c.post_id
+                 LEFT JOIN (SELECT post_id,
+                                   SUM(
+                                           IF(image_url1 IS NOT NULL, 1, 0) +
+                                           IF(image_url2 IS NOT NULL, 1, 0) +
+                                           IF(image_url3 IS NOT NULL, 1, 0) +
+                                           IF(image_url4 IS NOT NULL, 1, 0) +
+                                           IF(image_url5 IS NOT NULL, 1, 0) +
+                                           IF(image_url6 IS NOT NULL, 1, 0) +
+                                           IF(image_url7 IS NOT NULL, 1, 0) +
+                                           IF(image_url8 IS NOT NULL, 1, 0) +
+                                           IF(image_url9 IS NOT NULL, 1, 0)
+                                   ) AS total_images
+                            FROM post_image
+                            GROUP BY post_id) pi ON pt.post_id = pi.post_id
+        WHERE pt.post_id = #{post_id}
+          AND pt.datetime &lt;= <![CDATA[NOW()]]>
+        GROUP BY pt.post_id
+        ORDER BY MAX(pt.`datetime`) DESC
+    </select>
+
+    <select id="selectPostLikeByPostIdAndUserId" resultType="org.insmont.beans.post.Post_like">
+        SELECT post_id, `id`, `datetime`
+        FROM post_like
+        WHERE post_id = #{post_id}
+          AND `id` = #{id}
+    </select>
+
+    <select id="selectPostUserInfoByUserId" resultType="org.insmont.beans.post.User_info">
+
+        SELECT follower                                              AS id,
+               (SELECT COUNT(post_id) FROM post WHERE id = #{id})    AS tweets,
+               (SELECT COUNT(*) FROM follow WHERE following = #{id}) AS fans,
+               COUNT(*)                                              AS follows
+        FROM follow
+        WHERE follower = #{id}
+
+    </select>
+    <select id="selectPostListWithId" resultType="org.insmont.beans.post.Post_info">
+        SELECT pt.post_id,
+               pt.`id`                       AS author,
+               pt.content,
+               pt.`visibility`,
+               pt.`edit`,
+               pt.`comment_permission`,
+               pt.`location`,
+               COALESCE(pl.total_likes, 0)   AS total_likes,
+               COALESCE(c.total_comments, 0) AS total_comments,
+               COALESCE(pi.total_images, 0)  AS total_images,
+               pt.`datetime`
+        FROM post pt
+                 LEFT JOIN (SELECT post_id, COUNT(*) AS total_likes
+                            FROM post_like
+                            GROUP BY post_id) pl ON pt.post_id = pl.post_id
+                 LEFT JOIN (SELECT post_id, COUNT(*) AS total_comments
+                            FROM `comment`
+                            GROUP BY post_id) c ON pt.post_id = c.post_id
+                 LEFT JOIN (SELECT post_id,
+                                   SUM(
+                                           IF(image_url1 IS NOT NULL, 1, 0) +
+                                           IF(image_url2 IS NOT NULL, 1, 0) +
+                                           IF(image_url3 IS NOT NULL, 1, 0) +
+                                           IF(image_url4 IS NOT NULL, 1, 0) +
+                                           IF(image_url5 IS NOT NULL, 1, 0) +
+                                           IF(image_url6 IS NOT NULL, 1, 0) +
+                                           IF(image_url7 IS NOT NULL, 1, 0) +
+                                           IF(image_url8 IS NOT NULL, 1, 0) +
+                                           IF(image_url9 IS NOT NULL, 1, 0)
+                                   ) AS total_images
+                            FROM post_image
+                            GROUP BY post_id) pi ON pt.post_id = pi.post_id
+        WHERE pt.id = #{id}
+          AND pt.datetime &lt;= <![CDATA[NOW()]]>
+        GROUP BY pt.post_id
+        ORDER BY MAX(pt.`datetime`) DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+
+    <select id="selectPostListWithOutId" resultType="org.insmont.beans.post.Post_info">
+        SELECT pt.post_id,
+               pt.`id`                           AS author,
+               pt.content,
+               pt.`visibility`,
+               pt.`edit`,
+               pt.`comment_permission`,
+               pt.`location`,
+               COALESCE(pl.total_likes, 0)       AS total_likes,
+               COALESCE(c.total_comments, 0)     AS total_comments,
+               COALESCE(pi.total_images, 0)      AS total_images,
+               pt.`datetime`
+        FROM post pt
+                 LEFT JOIN (
+            SELECT post_id, COUNT(*) AS total_likes
+            FROM post_like
+            GROUP BY post_id
+        ) pl ON pt.post_id = pl.post_id
+                 LEFT JOIN (
+            SELECT post_id, COUNT(*) AS total_comments
+            FROM `comment`
+            GROUP BY post_id
+        ) c ON pt.post_id = c.post_id
+                 LEFT JOIN (
+            SELECT post_id,
+                   SUM(
+                           IF(image_url1 IS NOT NULL, 1, 0) +
+                           IF(image_url2 IS NOT NULL, 1, 0) +
+                           IF(image_url3 IS NOT NULL, 1, 0) +
+                           IF(image_url4 IS NOT NULL, 1, 0) +
+                           IF(image_url5 IS NOT NULL, 1, 0) +
+                           IF(image_url6 IS NOT NULL, 1, 0) +
+                           IF(image_url7 IS NOT NULL, 1, 0) +
+                           IF(image_url8 IS NOT NULL, 1, 0) +
+                           IF(image_url9 IS NOT NULL, 1, 0)
+                   ) AS total_images
+            FROM post_image
+            GROUP BY post_id
+        ) pi ON pt.post_id = pi.post_id
+        WHERE pt.datetime &lt;= <![CDATA[NOW()]]>
+        GROUP BY pt.post_id
+        ORDER BY MAX(pt.`datetime`) DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+
+
+
+    <select id="selectPostByPostId" resultType="org.insmont.beans.post.Post">
+        select post_id,
+               id,
+               content,
+               visibility,
+               edit,
+               comment_permission,
+               location,
+               datetime
+        from post
+        where post_id = #{post_id}
+    </select>
+
+    <select id="selectPostImageByPostId" resultType="org.insmont.beans.post.Post_image">
+        select post_id,
+               image_url1,
+               image_url2,
+               image_url3,
+               image_url4,
+               image_url5,
+               image_url6,
+               image_url7,
+               image_url8,
+               image_url9
+        from post_image
+        where post_id = #{post_id}
+    </select>
+
+    <select id="getPostCommentsWithPostId" resultType="org.insmont.beans.post.comment.Comment">
+        select comment_id, post_id, id, content, location, datetime
+        from comment
+        where post_id = #{post_id}
+    </select>
+
+</mapper>

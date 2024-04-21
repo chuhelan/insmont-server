@@ -33,8 +33,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("https://insmont.org.cn", "http://localhost:5500","http://127.0.0.1:5500")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedOrigins("https://insmont.org.cn", "http://localhost:5500",
+                        "http://127.0.0.1:5500", "https://api.insmont.org.cn",
+                        "https://image.chuhelan.com/", "https://insmont.org")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);

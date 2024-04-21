@@ -17,10 +17,13 @@
 
 package org.insmont.service.impl.user;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.insmont.beans.user.Login_record;
+import org.insmont.beans.user.Privacy;
 import org.insmont.beans.user.Profile;
 import org.insmont.beans.user.User;
 import org.insmont.beans.verification.Verification_email;
@@ -38,12 +41,14 @@ import org.insmont.util.ip.IpUtil;
 import org.insmont.util.ip.RegionUtil;
 import org.insmont.util.encryption.EncryptionUtil;
 import org.insmont.util.string.StringUtil;
+import org.insmont.util.upload.UploadImage;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author chuhelan
@@ -53,18 +58,20 @@ import java.util.Optional;
  * @Desc:
  */
 
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
 
     StringUtil stringUtil = new StringUtil();
     GenerateUid generateUid = new GenerateUid();
-
     @Resource
     UserDao userDao;
     @Resource
     PhoneDao phoneDao;
     @Resource
     MailDao mailDao;
+    @Resource
+    UploadImage uploadImage;
 
     @Resource
     IdentIconUtil identIconUtil;
@@ -112,6 +119,7 @@ public class UserServiceImpl implements UserService {
                 userDao.insertUserWithEmail(user);
             }
             userDao.insertProfileAvatarWithId(user.getId(), identIconUtil.getUploadUrl(user.getUsername()));
+            userDao.insertPrivacyWithId(user.getId());
             return "200";
         } catch (Exception e) {
             e.printStackTrace();
@@ -225,11 +233,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public int verifyToken(String id, String token) {
         User user = userDao.selectUserTokenById(id);
-        if(user == null){
+        if (user == null) {
             return 404;
-        }else if(user.getSession().equals(token)){
+        } else if (user.getSession().equals(token)) {
             return 200;
-        }else{
+        } else {
             return 401;
         }
     }
@@ -237,6 +245,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public CodeMessageData getUserInfo(String id) {
         Profile profileInfo = userDao.getUserProfileWithId(id);
+        Privacy privacyInfo = userDao.getUserPrivacyWithId(id);
 
         if (profileInfo == null) {
             return new CodeMessageData(404, "user not found", null);
@@ -254,9 +263,117 @@ public class UserServiceImpl implements UserService {
         returnData.addProperty("state", Optional.ofNullable(profileInfo.getState()).orElse(""));
         returnData.addProperty("credit", profileInfo.getCredit());
         returnData.addProperty("verification", profileInfo.getVerification());
+        returnData.addProperty("search", privacyInfo.getSearch());
+        returnData.addProperty("recommend", privacyInfo.getRecommend());
 
         return new CodeMessageData(200, "success", returnData);
     }
+
+    @Override
+    public List<String> getRecommendUser(BigInteger id) {
+        return userDao.selectRecommendUser(id);
+    }
+
+    @SneakyThrows
+    @Override
+    public int updateAvatar(BigInteger id, MultipartFile avatar) {
+
+        if (avatar.isEmpty()) {
+            return 400;
+        }
+
+        String uploadURL = uploadImage.uploadImage(avatar);
+        log.info("uploadURL = " + uploadURL);
+
+        if (uploadURL == null || uploadURL.isEmpty()) {
+            return 401;
+        } else {
+            userDao.updateProfileAvatarWithId(id, uploadURL);
+            return 200;
+        }
+    }
+
+    @Override
+    public int updateBio(BigInteger id, String bio) {
+        userDao.updateProfileBioWithId(id, bio);
+        return 200;
+    }
+
+    @Override
+    public int updatePrivacy(BigInteger id, String search, String recommend) {
+        userDao.updatePrivacyWithId(id, search, recommend);
+        return 200;
+    }
+
+    @Override
+    public int updatePassword(BigInteger id, String password) {
+        password = EncryptionUtil.encryptPassword(password);
+        userDao.updateUserPassword(id, password);
+        return 200;
+    }
+
+    @Override
+    public int updateUserInfo(BigInteger id, String username, String gender, String birthday, String constellation) {
+
+        if (Objects.equals(birthday, "")) {
+            birthday = null;
+        }
+
+        userDao.updateUserInfoTableUser(id, username);
+        userDao.updateUserInfoTableProfile(id, gender, birthday, constellation);
+        return 200;
+    }
+
+    @Override
+    public int deleteUser(BigInteger id) {
+        if (userDao.getAllUserInfoWithId(id.toString()) == null) {
+            return 404;
+        }
+        userDao.deleteUser(id);
+        return 200;
+    }
+
+    @Override
+    public CodeMessageData getFollowingLatest(BigInteger id) {
+
+        JsonObject returnData = new JsonObject();
+
+        List<Profile> followingList = userDao.selectLatestFollowingInfoByUserIdWithoutPrivacy(id);
+        JsonArray userList = new JsonArray();
+        for (Profile following : followingList) {
+            JsonObject userData = new JsonObject();
+            userData.addProperty("id", following.getId().toString());
+            userData.addProperty("username", userDao.getAllUserInfoWithId(following.getId().toString()).getUsername());
+            userData.addProperty("avatar", following.getAvatar());
+            userData.addProperty("bio", following.getBio());
+            userData.addProperty("constellation", following.getConstellation());
+            userData.addProperty("state", following.getState());
+            userData.addProperty("credit", following.getCredit());
+            userData.addProperty("verification", following.getVerification());
+            userData.addProperty("location", following.getLocation());
+
+            userList.add(userData);
+        }
+
+        returnData.add("List", userList);
+
+        return new CodeMessageData(200, id.toString(), returnData);
+    }
+
+    @Override
+    public int isFollowed(BigInteger id, BigInteger targetUser) {
+        if (userDao.getAllUserInfoWithId(targetUser.toString()) == null || userDao.getAllUserInfoWithId(id.toString()) == null) {
+            return 404;
+        }
+        if (userDao.getFollowed(id, targetUser) == null) {
+            return 401;
+        }
+        if (Objects.equals(userDao.getFollowed(id, targetUser).getFollower(), id)) {
+            return 200;
+        }
+        return 201;
+    }
+
 
     public int recordLogin(BigInteger id) throws Exception {
         String device = DeviceDetector.getDevice();
@@ -278,4 +395,6 @@ public class UserServiceImpl implements UserService {
             return 200;
         }
     }
+
+
 }
