@@ -81,6 +81,12 @@
         where post_id = #{post_id}
     </delete>
 
+    <delete id="deleteComment">
+        delete
+        from comment
+        where comment_id = #{comment_id}
+    </delete>
+
     <select id="selectPostInfoByPostId" resultType="org.insmont.beans.post.Post_info">
         SELECT pt.post_id,
                pt.`id`                       AS author,
@@ -258,6 +264,20 @@
         select comment_id, post_id, id, content, location, datetime
         from comment
         where post_id = #{post_id}
+    </select>
+
+    <select id="getPostCommentWithCommentId" resultType="org.insmont.beans.post.comment.Comment">
+        select comment_id, post_id, id, content, location, datetime
+        from comment
+        where comment_id = #{comment_id}
+    </select>
+    <select id="getPostCommentsWithPostIdAndUserId" resultType="org.insmont.beans.post.comment.Comment">
+        select comment_id, post_id, id, content, location, datetime
+        from comment
+        where post_id = #{post_id}
+          and id = #{id}
+        order by datetime desc
+        limit 1
     </select>
 
 </mapper>

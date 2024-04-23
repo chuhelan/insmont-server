@@ -20,6 +20,7 @@ package org.insmont.controller.post;
 import com.google.gson.Gson;
 import jakarta.annotation.Resource;
 import org.insmont.model.CodeMessage;
+import org.insmont.model.CodeMessageData;
 import org.insmont.service.post.PostService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -123,16 +124,37 @@ public class PostController {
 //      TODO 推文的分享功能
 //    @PostMapping("post/share")
 
+    @GetMapping("post/like/verify")
+    public String post_like_verify(BigInteger id, BigInteger post_id) {
+        return switch (postService.verifyPostWithUserId(id, post_id)) {
+            case 200 -> gson.toJson(new CodeMessage(200, "还没有点赞"));
+            case 201 -> gson.toJson(new CodeMessage(201, "已经点赞"));
+            case 400 -> gson.toJson(new CodeMessage(400, "不能输入空值"));
+            case 401 -> gson.toJson(new CodeMessage(403, "用户没有权限"));
+            case 404 -> gson.toJson(new CodeMessage(404, "帖子不存在"));
+            default -> gson.toJson(new CodeMessage(500, "未知错误"));
+        };
+    }
 
-    //      TODO 推文的评论功能
     @PostMapping("post/comment")
-    public String post_comment(BigInteger post_id, BigInteger id, String content){
+    public String post_comment(BigInteger post_id, BigInteger id, String content) {
         int code = postService.comment(post_id, id, content);
         return switch (code) {
             case 200 -> gson.toJson(new CodeMessage(200, "评论成功"));
             case 400 -> gson.toJson(new CodeMessage(400, "内容为空"));
             case 401 -> gson.toJson(new CodeMessage(403, "用户没有权限"));
-            case 404 -> gson.toJson(new CodeMessage(404, "帖子不存在"));
+            case 404 -> gson.toJson(new CodeMessage(404, "用户或帖子不存在"));
+            default -> gson.toJson(new CodeMessage(500, "未知错误"));
+        };
+    }
+
+    @DeleteMapping("post/comment/delete")
+    public String deleteComment(BigInteger comment_id, BigInteger id) {
+        return switch (postService.deleteCommentByUserId(comment_id, id)) {
+            case 200 -> gson.toJson(new CodeMessage(200, "删除成功"));
+            case 400 -> gson.toJson(new CodeMessage(400, "不能输入空值"));
+            case 401 -> gson.toJson(new CodeMessage(401, "用户没有权限"));
+            case 404 -> gson.toJson(new CodeMessage(404, "评论不存在"));
             default -> gson.toJson(new CodeMessage(500, "未知错误"));
         };
     }
@@ -157,5 +179,8 @@ public class PostController {
         };
     }
 
-
+    @GetMapping("post/comment/recently")
+    public String getRecentlyComment(BigInteger post_id, BigInteger id){
+        return gson.toJson(postService.getRecentlyCommentInfoByUserId(post_id,id));
+    }
 }

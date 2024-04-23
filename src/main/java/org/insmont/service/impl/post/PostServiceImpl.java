@@ -27,6 +27,7 @@ import org.insmont.beans.user.Profile;
 import org.insmont.beans.user.User;
 import org.insmont.dao.post.PostDao;
 import org.insmont.dao.user.UserDao;
+import org.insmont.model.CodeMessage;
 import org.insmont.model.CodeMessageData;
 import org.insmont.service.post.PostService;
 import org.insmont.util.reflection.ReflectionUtil;
@@ -422,10 +423,13 @@ public class PostServiceImpl implements PostService {
         List<Comment> postComment = postDao.getPostCommentsWithPostId(post.getPost_id());
         for (Comment comment : postComment) {
             JsonObject commentInfo = new JsonObject();
+            User userinfo = userDao.getAllUserInfoWithId(comment.getId().toString());
+            Profile userProfile = userDao.getUserProfileWithId(comment.getId().toString());
             commentInfo.addProperty("comment_id", comment.getComment_id());
-            commentInfo.addProperty("id", userDao.getAllUserInfoWithId(comment.getId().toString()).getId());
-            commentInfo.addProperty("username", userDao.getAllUserInfoWithId(comment.getId().toString()).getUsername());
-            commentInfo.addProperty("avatar", userDao.getUserProfileWithId(comment.getId().toString()).getAvatar());
+            commentInfo.addProperty("id", userinfo.getId());
+            commentInfo.addProperty("username", userinfo.getUsername());
+            commentInfo.addProperty("avatar", userProfile.getAvatar());
+            commentInfo.addProperty("verification", userProfile.getVerification());
             commentInfo.addProperty("content", comment.getContent());
             commentInfo.addProperty("location", comment.getLocation());
             commentInfo.addProperty("datetime", convertDateToISO8601(comment.getDatetime()));
@@ -452,6 +456,70 @@ public class PostServiceImpl implements PostService {
 
         postDao.updatePostPrivacy(post_id, visibility, comment_permission);
         return 200;
+    }
+
+    @Override
+    public int verifyPostWithUserId(BigInteger id, BigInteger postId) {
+
+        if (id == null || postId == null) {
+            return 400;
+        }
+
+        Profile userinfo = userDao.getUserProfileWithId(id.toString());
+        Post_info post = postDao.selectPostInfoByPostId(postId);
+
+        if (post == null || userinfo == null) {
+            return 404;
+        }
+
+        if (DISABLED_STATE.contains(userinfo.getState()) || userinfo.getCredit() <= 2.8) {
+            return 403;
+        }
+
+        Post_like postLike = postDao.selectPostLikeByPostIdAndUserId(postId, id.toString());
+        if (postLike == null) {
+            return 200;
+        } else {
+            return 201;
+        }
+    }
+
+    @Override
+    public int deleteCommentByUserId(BigInteger comment_id, BigInteger id) {
+        if (comment_id == null || id == null) {
+            return 400;
+        }
+
+        Comment commentInfo = postDao.getPostCommentWithCommentId(comment_id);
+
+        if (commentInfo == null) {
+            return 404;
+        }
+
+        Post commentFromPost = postDao.selectPostByPostId(commentInfo.getPost_id());
+        if (Objects.equals(commentFromPost.getId(), id) || Objects.equals(commentInfo.getId(), id)) {
+            postDao.deleteComment(comment_id);
+            return 200;
+        } else {
+            return 401;
+        }
+    }
+
+    @Override
+    public CodeMessage getRecentlyCommentInfoByUserId(BigInteger post_id, BigInteger id) {
+        if (post_id == null || id == null) {
+            return new CodeMessage(400, "cannot input null value");
+        }
+        if (postDao.selectPostInfoByPostId(post_id) == null || userDao.getAllUserInfoWithId(id.toString()) == null) {
+            return new CodeMessage(404, "post or user not found");
+        }
+
+        Comment recentlyComment = postDao.getPostCommentsWithPostIdAndUserId(post_id, id);
+        if (recentlyComment == null) {
+            return new CodeMessage(403, "comment not found");
+        }else {
+            return new CodeMessage(200, recentlyComment.getComment_id().toString());
+        }
     }
 
 

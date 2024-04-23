@@ -67,4 +67,10 @@ public interface PostDao {
     List<Comment> getPostCommentsWithPostId(BigInteger postId);
 
     void updatePostPrivacy(BigInteger post_id, String visibility, int comment_permission);
+
+    Comment getPostCommentWithCommentId(BigInteger comment_id);
+
+    void deleteComment(BigInteger comment_id);
+
+    Comment getPostCommentsWithPostIdAndUserId(BigInteger post_id, BigInteger id);
 }

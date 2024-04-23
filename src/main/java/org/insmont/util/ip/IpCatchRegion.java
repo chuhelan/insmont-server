@@ -34,7 +34,7 @@ public class IpCatchRegion {
     public static String cityRegion(String ip) throws Exception {
 
         if (ip.equals("0:0:0:0:0:0:0:1") || ip.equals("::1")) {
-            return "localhost";
+            return "Insmont 数据中心";
         }
 
         try (InputStream inputStream = IpCatchRegion.class.getResourceAsStream("/ip2region.xdb")) {

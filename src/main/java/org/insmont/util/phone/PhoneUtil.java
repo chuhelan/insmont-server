@@ -66,7 +66,7 @@ public class PhoneUtil {
 
         SendSmsRequest sendSmsRequest = new SendSmsRequest()
                 .setPhoneNumbers(mobile)
-                .setSignName("黑煤球")
+                .setSignName("Insmont中国")
                 .setTemplateCode("SMS_257705731")
                 .setTemplateParam("{\"code\":\"" + code + "\"}");
 

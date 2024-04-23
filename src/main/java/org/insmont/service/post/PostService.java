@@ -18,6 +18,7 @@
 package org.insmont.service.post;
 
 import org.insmont.beans.post.User_info;
+import org.insmont.model.CodeMessage;
 import org.insmont.model.CodeMessageData;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -52,4 +53,10 @@ public interface PostService {
     CodeMessageData getPostInfo(BigInteger postId);
 
     int updatePostPrivacy(BigInteger id, BigInteger post_id, String visibility, int comment_permission);
+
+    int verifyPostWithUserId(BigInteger id, BigInteger postId);
+
+    int deleteCommentByUserId(BigInteger comment_id, BigInteger id);
+
+    CodeMessage getRecentlyCommentInfoByUserId(BigInteger post_id, BigInteger id);
 }

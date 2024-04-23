@@ -286,18 +286,18 @@
     </select>
 
     <select id="selectLatestFollowingInfoByUserIdWithoutPrivacy" resultType="org.insmont.beans.user.Profile">
-        SELECT u.id,
-               u.username,
-               p.avatar,
-               p.bio,
-               p.constellation,
-               p.state,
-               p.credit,
-               p.verification,
-               p.location
+        SELECT DISTINCT u.id,
+                        u.username,
+                        p.avatar,
+                        p.bio,
+                        p.constellation,
+                        p.state,
+                        p.credit,
+                        p.verification,
+                        p.location
         FROM follow f
+                 JOIN privacy priv ON f.following = priv.id
                  JOIN user u ON f.following = u.id
-                 JOIN privacy priv ON u.id = priv.id
                  LEFT JOIN profile p ON f.following = p.id
         WHERE f.follower = #{id}
           AND priv.recommend = 'true'
@@ -305,6 +305,7 @@
         ORDER BY f.time DESC
         LIMIT 5;
     </select>
+
 
     <select id="getFollowed" resultType="org.insmont.beans.post.Follow">
         SELECT follower, following, time
