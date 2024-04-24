@@ -28,6 +28,8 @@ public class RegionUtil {
 
     public static String getRegion(String ip) throws Exception {
         String cityInfo = IpCatchRegion.cityRegion(ip);
+        if (cityInfo.equals("Insmont 数据中心"))
+            return cityInfo;
         if (!cityInfo.isEmpty()) {
             cityInfo = cityInfo.replace("|", " ");
             String[] cityList = cityInfo.split(" ");

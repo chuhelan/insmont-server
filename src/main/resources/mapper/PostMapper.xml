@@ -64,7 +64,8 @@
 
     <update id="updatePostPrivacy">
         update post
-        set visibility = #{visibility}
+        set visibility = #{visibility},
+            comment_permission = #{comment_permission}
         where post_id = #{post_id}
     </update>
 
